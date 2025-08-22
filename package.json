@@ -8,14 +8,17 @@
     "wiki"
   ],
   "license": "MIT",
-  "homepage": "",
+  "homepage": "https://github.com/h4ks/n8n-mediawiki#readme",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "H4ks",
+    "email": "hello@h4ks.com"
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/h4ks/n8n-mediawiki.git"
+  },
+  "bugs": {
+    "url": "https://github.com/h4ks/n8n-mediawiki/issues"
   },
   "engines": {
     "node": ">=18.10",
@@ -29,11 +32,17 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials",
     "lintfix": "eslint nodes credentials --fix",
-    "prepublishOnly": "npm run build && npm run lint"
+    "prepublishOnly": "npm run build && npm run lint",
+    "version": "npm run build"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
