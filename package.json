@@ -8,17 +8,17 @@
     "wiki"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/h4ks/n8n-mediawiki#readme",
+  "homepage": "https://github.com/matheusfillipe/n8n-mediawiki",
   "author": {
-    "name": "H4ks",
-    "email": "hello@h4ks.com"
+    "name": "matheusfillipe",
+    "email": "mattf@h4ks.com"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/h4ks/n8n-mediawiki.git"
+    "url": "git+https://github.com/matheusfillipe/n8n-mediawiki"
   },
   "bugs": {
-    "url": "https://github.com/h4ks/n8n-mediawiki/issues"
+    "url": "https://github.com/matheusfillipe/n8n-mediawiki/issues"
   },
   "engines": {
     "node": ">=18.10",
