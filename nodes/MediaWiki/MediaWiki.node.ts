@@ -7,6 +7,8 @@ import {
 	NodeConnectionType,
 } from 'n8n-workflow';
 
+import { MediaWikiClient } from '../../src/MediaWikiClient';
+
 export class MediaWiki implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'MediaWiki',
@@ -131,7 +133,6 @@ export class MediaWiki implements INodeType {
 				type: 'string',
 				default: '',
 				placeholder: 'Wikipedia',
-				description: 'Search query',
 				displayOptions: {
 					show: {
 						resource: ['search'],
@@ -165,7 +166,7 @@ export class MediaWiki implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 		const credentials = await this.getCredentials('mediaWikiApi');
 
-		const baseUrl = credentials?.baseUrl as string || 'https://en.wikipedia.org';
+		const client = new MediaWikiClient(credentials, this.helpers);
 
 		for (let i = 0; i < items.length; i++) {
 			try {
@@ -178,51 +179,16 @@ export class MediaWiki implements INodeType {
 					const pageTitle = this.getNodeParameter('pageTitle', i) as string;
 
 					if (operation === 'get') {
-						responseData = await this.helpers.request({
-							method: 'GET',
-							url: `${baseUrl}/api.php`,
-							qs: {
-								action: 'query',
-								prop: 'revisions',
-								titles: pageTitle,
-								rvprop: 'content',
-								format: 'json',
-							},
-							json: true,
-						});
+						responseData = await client.getPage({ title: pageTitle });
 					} else if (operation === 'create' || operation === 'update') {
 						const content = this.getNodeParameter('content', i) as string;
-
-						responseData = await this.helpers.request({
-							method: 'POST',
-							url: `${baseUrl}/api.php`,
-							form: {
-								action: 'edit',
-								title: pageTitle,
-								text: content,
-								format: 'json',
-								token: '+\\',
-							},
-							json: true,
-						});
+						responseData = await client.editPage({ title: pageTitle, content });
 					}
 				} else if (resource === 'search') {
 					if (operation === 'search') {
 						const searchQuery = this.getNodeParameter('searchQuery', i) as string;
 						const limit = this.getNodeParameter('limit', i) as number;
-
-						responseData = await this.helpers.request({
-							method: 'GET',
-							url: `${baseUrl}/api.php`,
-							qs: {
-								action: 'query',
-								list: 'search',
-								srsearch: searchQuery,
-								srlimit: limit,
-								format: 'json',
-							},
-							json: true,
-						});
+						responseData = await client.searchPages({ query: searchQuery, limit });
 					}
 				}
 

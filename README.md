@@ -4,9 +4,17 @@ This is an n8n community node for MediaWiki integration. It allows you to intera
 
 ## Features
 
+### Regular Nodes
 - **Page Operations**: Get, create, and update MediaWiki pages
 - **Search**: Search for pages within a MediaWiki instance
 - **Flexible Authentication**: Support for both authenticated and anonymous operations
+
+### AI Tools
+- **MediaWiki Page Tool**: AI-compatible tool for general page operations (get, create, update)
+- **MediaWiki Search Tool**: AI-compatible tool for searching pages
+- **MediaWiki Create Page Tool**: Dedicated tool for creating new pages
+- **MediaWiki Update Page Tool**: Dedicated tool for updating existing pages with edit summary support
+- **LangChain Integration**: Works with n8n AI agents and workflows
 
 ## Installation
 
@@ -37,6 +45,32 @@ Configure the MediaWiki API credentials with:
 
 #### Search Resource
 - **Search**: Search for pages matching a query
+
+### AI Tools Usage
+
+The AI tools can be used with n8n's AI Agent nodes:
+
+1. Add an AI Agent node to your workflow
+2. Connect the MediaWiki Page Tool or Search Tool to the agent
+3. The AI can now use these tools automatically based on context
+
+#### MediaWiki Page Tool
+- Input format: `{"operation": "get|create|update", "title": "Page Title", "content": "Page content (for create/update)"}`
+- Returns: MediaWiki API response
+
+#### MediaWiki Search Tool  
+- Input format: `{"query": "search term", "limit": 10}` or just `"search term"`
+- Returns: Search results from MediaWiki API
+
+#### MediaWiki Create Page Tool
+- Input format: `{"title": "Page Title", "content": "Page content"}`
+- Returns: MediaWiki API response with creation confirmation
+- Note: Requires authentication credentials
+
+#### MediaWiki Update Page Tool
+- Input format: `{"title": "Page Title", "content": "Updated content", "summary": "Edit summary (optional)"}`
+- Returns: MediaWiki API response with update confirmation
+- Note: Requires authentication credentials and page must exist
 
 ## Development
 

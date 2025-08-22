@@ -27,6 +27,6 @@
     "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["nodes/**/*", "credentials/**/*"],
+  "include": ["nodes/**/*", "credentials/**/*", "src/**/*"],
   "exclude": ["node_modules/**/*", "dist/**/*"]
 }
