@@ -16,8 +16,8 @@ export class MediaWikiPage implements INodeType {
     icon: 'file:mediawiki.svg',
     group: ['transform'],
     version: 1,
-    subtitle: '={{$parameter["operation"] + ": " + $parameter["pageTitle"]}}',
-    description: 'Perform get, create, or update operations on MediaWiki pages',
+    subtitle: '={{$parameter["pageTitle"] ? $parameter["operation"] + ": " + $parameter["pageTitle"] : "MediaWiki page operations"}}',
+    description: 'Get, edit, or delete MediaWiki pages',
     usableAsTool: true,
     defaults: {
       name: 'MediaWiki',
@@ -35,12 +35,26 @@ export class MediaWikiPage implements INodeType {
         displayName: 'Operation',
         name: 'operation',
         type: 'options',
-								noDataExpression: true,
+        noDataExpression: true,
         options: [
-          { name: 'Page Get', value: 'get' },
-          { name: 'Page Create', value: 'create' },
-          { name: 'Page Update', value: 'update' },
-          { name: 'Page Delete', value: 'delete' },
+          {
+            name: 'Get Page',
+            value: 'get',
+            description:
+              'Retrieve the current content and metadata of an existing page',
+          },
+          {
+            name: 'Edit Page',
+            value: 'edit',
+            description:
+              'Create a new page or update existing page content (auto-detects if page exists)',
+          },
+          {
+            name: 'Delete Page',
+            value: 'delete',
+            description:
+              'Permanently remove a page and all its revision history',
+          },
         ],
         default: 'get',
         required: true,
@@ -51,7 +65,8 @@ export class MediaWikiPage implements INodeType {
         type: 'string',
         default: '',
         required: true,
-        description: 'The title of the page to operate on',
+        description:
+          'The exact title of the MediaWiki page. Use proper capitalization and spacing. Examples: "Main Page", "User:JohnDoe", "Category:Science"',
       },
       {
         displayName: 'Page Content',
@@ -60,9 +75,10 @@ export class MediaWikiPage implements INodeType {
         typeOptions: { rows: 4 },
         default: '',
         required: false,
-        description: 'The full text content of the page (required for create and update)',
+        description:
+          'The complete page content in MediaWiki wikitext format. Use MediaWiki markup: ==Headings==, [[links]], {{templates}}, *bullets, #numbered lists, etc.',
         displayOptions: {
-          show: { operation: ['create', 'update'] },
+          show: { operation: ['edit'] },
         },
       },
       {
@@ -71,7 +87,8 @@ export class MediaWikiPage implements INodeType {
         type: 'string',
         default: '',
         required: false,
-        description: 'Optional reason for deleting the page',
+        description:
+          'Brief reason for page deletion that will appear in deletion log. Examples: "Spam", "Copyright violation", "Outdated information".',
         displayOptions: {
           show: { operation: ['delete'] },
         },
@@ -104,11 +121,11 @@ export class MediaWikiPage implements INodeType {
 
         if (operation === 'get') {
           response = await client.getPage({ title: pageTitle })
-        } else if (operation === 'create' || operation === 'update') {
+        } else if (operation === 'edit') {
           if (!pageContent) {
             throw new NodeOperationError(
               this.getNode(),
-              'Page content is required for create and update operations.'
+              'Page content is required for edit operations.'
             )
           }
           response = await client.editPage({
@@ -134,7 +151,7 @@ export class MediaWikiPage implements INodeType {
           response,
         }
 
-        if (operation === 'create' || operation === 'update') {
+        if (operation === 'edit') {
           responseData.content = pageContent
         }
 

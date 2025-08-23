@@ -7,7 +7,7 @@ A powerful n8n community node for seamless MediaWiki integration. Connect your n
 ## ✨ Features
 
 ### 🔧 Regular Workflow Nodes
-- **MediaWiki Page**: Complete page operations (get, create, update, delete) for any MediaWiki instance
+- **MediaWiki Page**: Complete page operations (get, edit, delete) for any MediaWiki instance
 - **MediaWiki Search**: Powerful search functionality for finding pages within MediaWiki
 - **Flexible Authentication**: Support for both authenticated and anonymous operations
 
@@ -59,8 +59,7 @@ Configure the MediaWiki API credentials with:
 #### 📄 MediaWiki Page
 Complete page management with support for:
 - **Get**: Retrieve the content of any page
-- **Create**: Create a new page with specified content  
-- **Update**: Update an existing page with new content
+- **Edit**: Create new pages or update existing pages with content (automatically detects if page exists)
 - **Delete**: Remove pages with optional deletion reason
 
 #### 🔍 MediaWiki Search  
@@ -73,7 +72,7 @@ Both nodes work seamlessly with n8n's AI Agent nodes:
 1. **Add nodes to your workflow** - Use MediaWiki Page and MediaWiki Search as regular nodes
 2. **Connect to AI Agents** - These nodes automatically become available as AI tools when connected to AI Agent nodes
 3. **"Let AI fill this in" buttons** - Parameters show toggle buttons allowing AI to automatically fill values based on context
-4. **Intelligent automation** - AI agents can read, create, update, delete, and search MediaWiki content autonomously
+4. **Intelligent automation** - AI agents can read, edit, delete, and search MediaWiki content autonomously
 
 #### Example AI Usage:
 - **AI Research Assistant**: "Find information about quantum computing on Wikipedia and create a summary page"
@@ -83,9 +82,9 @@ Both nodes work seamlessly with n8n's AI Agent nodes:
 ### 💡 Parameter Configuration
 
 #### MediaWiki Page Node
-- **Operation**: Select get, create, update, or delete
+- **Operation**: Select get, edit, or delete
 - **Page Title**: The title of the page to operate on (AI can fill automatically)
-- **Page Content**: Content for create/update operations (AI can generate)
+- **Page Content**: Content for edit operations (AI can generate) - creates page if it doesn't exist, updates if it does
 - **Delete Reason**: Optional reason for deletion (AI can suggest)
 
 #### MediaWiki Search Node

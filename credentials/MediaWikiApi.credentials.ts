@@ -16,7 +16,7 @@ export class MediaWikiApi implements ICredentialType {
 			type: 'string',
 			default: '',
 			placeholder: 'https://en.wikipedia.org',
-			description: 'Base URL of the MediaWiki instance',
+			description: 'Full base URL of the MediaWiki instance including protocol. Examples: https://en.wikipedia.org, https://wiki.company.com, http://localhost/mediawiki.',
 			required: true,
 		},
 		{
@@ -24,7 +24,7 @@ export class MediaWikiApi implements ICredentialType {
 			name: 'username',
 			type: 'string',
 			default: '',
-			description: 'Username for MediaWiki authentication',
+			description: 'MediaWiki username for authenticated operations (editing, deleting). Leave empty for read-only anonymous access.',
 		},
 		{
 			displayName: 'Password',
@@ -34,7 +34,7 @@ export class MediaWikiApi implements ICredentialType {
 				password: true,
 			},
 			default: '',
-			description: 'Password for MediaWiki authentication',
+			description: 'MediaWiki password or bot password for authenticated operations. Required for creating, editing, or deleting pages.',
 		},
 	];
 

@@ -14,10 +14,12 @@ export class MediaWikiSearch implements INodeType {
     icon: 'file:mediawiki.svg',
     group: ['transform'],
     version: 1,
-    subtitle: '={{$parameter["searchTerm"]}}',
+    subtitle: '={{$parameter["searchTerm"] ? "Search: " + $parameter["searchTerm"] : "MediaWiki search operations"}}',
     description: 'Search MediaWiki pages',
     usableAsTool: true,
-    defaults: { name: 'MediaWiki Search' },
+    defaults: {
+      name: 'MediaWiki Search',
+    },
     inputs: [NodeConnectionType.Main],
     outputs: [NodeConnectionType.Main],
     credentials: [{ name: 'mediaWikiApi', required: false }],
@@ -29,7 +31,7 @@ export class MediaWikiSearch implements INodeType {
         default: '',
         required: true,
         description:
-          'The search term to find pages. When used as a tool, click the ⭐ to let the AI fill this.',
+          'Keywords or phrases to search for in MediaWiki pages. Supports partial matches, multiple words, and quoted phrases. Examples: "quantum physics", "machine learning algorithms"',
       },
       {
         displayName: 'Limit',
