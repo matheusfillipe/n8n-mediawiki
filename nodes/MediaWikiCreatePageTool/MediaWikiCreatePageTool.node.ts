@@ -17,6 +17,7 @@ export class MediaWikiCreatePageTool implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'AI tool for creating new MediaWiki pages',
+		usableAsTool: true,
 		defaults: {
 			name: 'MediaWiki Create Page Tool',
 		},
@@ -44,68 +45,45 @@ export class MediaWikiCreatePageTool implements INodeType {
 		],
 		properties: [
 			{
-				displayName: 'Tool Name',
-				name: 'toolName',
+				displayName: 'Page Title',
+				name: 'pageTitle',
 				type: 'string',
-				default: 'mediawiki_create_page',
-				description: 'Name of the tool for AI agent reference',
-				required: true,
+				default: '',
+				description: 'Title of the page to create',
+				required: false,
 			},
 			{
-				displayName: 'Tool Description',
-				name: 'toolDescription',
+				displayName: 'Page Content',
+				name: 'pageContent',
 				type: 'string',
 				typeOptions: {
-					rows: 3,
+					rows: 4,
 				},
-				default: 'Tool for creating new MediaWiki pages. Requires a page title and content to create a new page on the MediaWiki instance.',
-				description: 'Description that helps the AI agent understand when to use this tool',
-				required: true,
+				default: '',
+				description: 'Content of the new page',
+				required: false,
 			},
 		],
 	};
 
 	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
-		const toolName = this.getNodeParameter('toolName', itemIndex) as string;
-		const toolDescription = this.getNodeParameter('toolDescription', itemIndex) as string;
+		const pageTitle = this.getNodeParameter('pageTitle', itemIndex) as string;
+		const pageContent = this.getNodeParameter('pageContent', itemIndex) as string;
 		const credentials = await this.getCredentials('mediaWikiApi');
 
 		const client = new MediaWikiClient(credentials, this.helpers);
 
 		const tool = new DynamicTool({
-			name: toolName,
-			description: toolDescription,
-			func: async (input: string) => {
+			name: 'mediawiki_create_page_tool',
+			description: `Create a new MediaWiki page titled "${pageTitle}". Use this to create new pages with content.`,
+			func: async () => {
 				try {
-					let parsedInput: any;
-					try {
-						parsedInput = JSON.parse(input);
-					} catch {
-						return JSON.stringify({
-							error: 'Invalid input format. Expected JSON with title and content fields.',
-						});
-					}
-
-					const { title, content } = parsedInput;
-
-					if (!title) {
-						return JSON.stringify({
-							error: 'Missing required field: title is required.',
-						});
-					}
-
-					if (!content) {
-						return JSON.stringify({
-							error: 'Missing required field: content is required.',
-						});
-					}
-
-					const responseData = await client.editPage({ title, content });
+					const responseData = await client.editPage({ title: pageTitle, content: pageContent });
 
 					return JSON.stringify({
 						success: true,
 						operation: 'create',
-						title,
+						title: pageTitle,
 						response: responseData,
 					});
 				} catch (error) {

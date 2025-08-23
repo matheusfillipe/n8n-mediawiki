@@ -17,6 +17,7 @@ export class MediaWikiUpdatePageTool implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'AI tool for updating existing MediaWiki pages',
+		usableAsTool: true,
 		defaults: {
 			name: 'MediaWiki Update Page Tool',
 		},
@@ -44,74 +45,51 @@ export class MediaWikiUpdatePageTool implements INodeType {
 		],
 		properties: [
 			{
-				displayName: 'Tool Name',
-				name: 'toolName',
+				displayName: 'Page Title',
+				name: 'pageTitle',
 				type: 'string',
-				default: 'mediawiki_update_page',
-				description: 'Name of the tool for AI agent reference',
-				required: true,
+				default: '',
+				description: 'Title of the page to update',
+				required: false,
 			},
 			{
-				displayName: 'Tool Description',
-				name: 'toolDescription',
+				displayName: 'Page Content',
+				name: 'pageContent',
 				type: 'string',
 				typeOptions: {
-					rows: 3,
+					rows: 4,
 				},
-				default: 'Tool for updating existing MediaWiki pages. Requires a page title and new content to update an existing page on the MediaWiki instance.',
-				description: 'Description that helps the AI agent understand when to use this tool',
-				required: true,
+				default: '',
+				description: 'New content for the page',
+				required: false,
 			},
 			{
-				displayName: 'Include Edit Summary',
-				name: 'includeEditSummary',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to allow the AI to provide an edit summary for the update',
+				displayName: 'Edit Summary',
+				name: 'editSummary',
+				type: 'string',
+				default: 'Updated by AI',
+				description: 'Optional summary describing the changes made',
+				required: false,
 			},
 		],
 	};
 
 	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
-		const toolName = this.getNodeParameter('toolName', itemIndex) as string;
-		const toolDescription = this.getNodeParameter('toolDescription', itemIndex) as string;
-		const includeEditSummary = this.getNodeParameter('includeEditSummary', itemIndex) as boolean;
+		const pageTitle = this.getNodeParameter('pageTitle', itemIndex) as string;
+		const pageContent = this.getNodeParameter('pageContent', itemIndex) as string;
+		const editSummary = this.getNodeParameter('editSummary', itemIndex, '') as string;
 		const credentials = await this.getCredentials('mediaWikiApi');
 
 		const client = new MediaWikiClient(credentials, this.helpers);
 
 		const tool = new DynamicTool({
-			name: toolName,
-			description: toolDescription + (includeEditSummary ? ' Can optionally include an edit summary.' : ''),
-			func: async (input: string) => {
+			name: 'mediawiki_update_page_tool',
+			description: `Update existing MediaWiki page "${pageTitle}". Use this to update pages with new content.`,
+			func: async () => {
 				try {
-					let parsedInput: any;
-					try {
-						parsedInput = JSON.parse(input);
-					} catch {
-						return JSON.stringify({
-							error: 'Invalid input format. Expected JSON with title and content fields' + 
-								   (includeEditSummary ? ', and optional summary field' : '') + '.',
-						});
-					}
-
-					const { title, content, summary } = parsedInput;
-
-					if (!title) {
-						return JSON.stringify({
-							error: 'Missing required field: title is required.',
-						});
-					}
-
-					if (!content) {
-						return JSON.stringify({
-							error: 'Missing required field: content is required.',
-						});
-					}
-
 					// First check if the page exists by trying to get it
 					try {
-						const existingPage = await client.getPage({ title });
+						const existingPage = await client.getPage({ title: pageTitle });
 						if (!existingPage || !existingPage.query || !existingPage.query.pages) {
 							return JSON.stringify({
 								success: false,
@@ -126,16 +104,16 @@ export class MediaWikiUpdatePageTool implements INodeType {
 					}
 
 					const responseData = await client.editPage({ 
-						title, 
-						content,
-						...(includeEditSummary && summary ? { summary } : {})
+						title: pageTitle, 
+						content: pageContent,
+						...(editSummary ? { summary: editSummary } : {})
 					});
 
 					return JSON.stringify({
 						success: true,
 						operation: 'update',
-						title,
-						...(includeEditSummary && summary ? { summary } : {}),
+						title: pageTitle,
+						...(editSummary ? { summary: editSummary } : {}),
 						response: responseData,
 					});
 				} catch (error) {

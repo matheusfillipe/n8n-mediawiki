@@ -17,6 +17,7 @@ export class MediaWikiSearchTool implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'AI tool for searching MediaWiki pages',
+		usableAsTool: true,
 		defaults: {
 			name: 'MediaWiki Search Tool',
 		},
@@ -44,72 +45,51 @@ export class MediaWikiSearchTool implements INodeType {
 		],
 		properties: [
 			{
-				displayName: 'Tool Name',
-				name: 'toolName',
+				displayName: 'Search Term',
+				name: 'searchTerm',
 				type: 'string',
-				default: 'mediawiki_search',
-				description: 'Name of the tool for AI agent reference',
-				required: true,
+				default: '',
+				description: 'The search term to find pages',
+				required: false,
 			},
 			{
-				displayName: 'Tool Description',
-				name: 'toolDescription',
-				type: 'string',
-				typeOptions: {
-					rows: 3,
-				},
-				default: 'Tool for searching MediaWiki pages. Can search for articles, content, and pages on MediaWiki instances like Wikipedia.',
-				description: 'Description that helps the AI agent understand when to use this tool',
-				required: true,
-			},
-			{
-				displayName: 'Default Limit',
-				name: 'defaultLimit',
+				displayName: 'Limit',
+				name: 'limit',
 				type: 'number',
 				typeOptions: {
 					minValue: 1,
 					maxValue: 500,
 				},
 				default: 10,
-				description: 'Default number of search results to return when not specified',
+				description: 'Max number of results to return',
+				required: false,
 			},
 		],
 	};
 
 	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
-		const toolName = this.getNodeParameter('toolName', itemIndex) as string;
-		const toolDescription = this.getNodeParameter('toolDescription', itemIndex) as string;
-		const defaultLimit = this.getNodeParameter('defaultLimit', itemIndex) as number;
+		const searchTerm = this.getNodeParameter('searchTerm', itemIndex) as string;
+		const limit = this.getNodeParameter('limit', itemIndex) as number;
 		const credentials = await this.getCredentials('mediaWikiApi');
 
 		const client = new MediaWikiClient(credentials, this.helpers);
 
 		const tool = new DynamicTool({
-			name: toolName,
-			description: toolDescription,
-			func: async (input: string) => {
+			name: 'mediawiki_search_tool',
+			description: `Search MediaWiki pages for "${searchTerm}". Use this to find pages matching search terms.`,
+			func: async () => {
 				try {
-					let parsedInput: any;
-					try {
-						parsedInput = JSON.parse(input);
-					} catch {
-						// If not JSON, treat as plain search query
-						parsedInput = { query: input };
-					}
+					const responseData = await client.searchPages({ query: searchTerm, limit });
 
-					const { query, limit = defaultLimit } = parsedInput;
-
-					if (!query) {
-						return JSON.stringify({
-							error: 'Search query is required.',
-						});
-					}
-
-					const responseData = await client.searchPages({ query, limit });
-
-					return JSON.stringify(responseData);
+					return JSON.stringify({
+						success: true,
+						searchTerm,
+						limit,
+						response: responseData,
+					});
 				} catch (error) {
 					return JSON.stringify({
+						success: false,
 						error: error instanceof Error ? error.message : String(error),
 					});
 				}

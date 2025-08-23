@@ -17,6 +17,7 @@ export class MediaWikiPageTool implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'AI tool for MediaWiki page operations (get, create, update)',
+		usableAsTool: true,
 		defaults: {
 			name: 'MediaWiki Page Tool',
 		},
@@ -44,76 +45,93 @@ export class MediaWikiPageTool implements INodeType {
 		],
 		properties: [
 			{
-				displayName: 'Tool Name',
-				name: 'toolName',
-				type: 'string',
-				default: 'mediawiki_page',
-				description: 'Name of the tool for AI agent reference',
-				required: true,
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				options: [
+					{
+						name: 'Get',
+						value: 'get',
+					},
+					{
+						name: 'Create',
+						value: 'create',
+					},
+					{
+						name: 'Update',
+						value: 'update',
+					},
+				],
+				default: 'get',
+				required: false,
 			},
 			{
-				displayName: 'Tool Description',
-				name: 'toolDescription',
+				displayName: 'Page Title',
+				name: 'pageTitle',
+				type: 'string',
+				default: '',
+				description: 'Title of the page to operate on',
+				required: false,
+			},
+			{
+				displayName: 'Page Content',
+				name: 'pageContent',
 				type: 'string',
 				typeOptions: {
-					rows: 3,
+					rows: 4,
 				},
-				default: 'Tool for MediaWiki page operations. Can get, create, or update pages on MediaWiki instances like Wikipedia.',
-				description: 'Description that helps the AI agent understand when to use this tool',
-				required: true,
+				default: '',
+				description: 'Content of the page (for create and update operations)',
+				required: false,
+				displayOptions: {
+					show: {
+						operation: ['create', 'update'],
+					},
+				},
 			},
 		],
 	};
 
 	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
-		const toolName = this.getNodeParameter('toolName', itemIndex) as string;
-		const toolDescription = this.getNodeParameter('toolDescription', itemIndex) as string;
+		const operation = this.getNodeParameter('operation', itemIndex) as string;
+		const pageTitle = this.getNodeParameter('pageTitle', itemIndex) as string;
+		const pageContent = operation !== 'get' ? this.getNodeParameter('pageContent', itemIndex, '') as string : '';
 		const credentials = await this.getCredentials('mediaWikiApi');
 
 		const client = new MediaWikiClient(credentials, this.helpers);
 
 		const tool = new DynamicTool({
-			name: toolName,
-			description: toolDescription,
-			func: async (input: string) => {
+			name: 'mediawiki_page_tool',
+			description: `MediaWiki page tool for ${operation} operations. Use this to ${operation} pages on MediaWiki instances.`,
+			func: async () => {
 				try {
-					let parsedInput: any;
-					try {
-						parsedInput = JSON.parse(input);
-					} catch {
-						return JSON.stringify({
-							error: 'Invalid input format. Expected JSON with operation, title, and optional content fields.',
-						});
-					}
-
-					const { operation, title, content } = parsedInput;
-
-					if (!operation || !title) {
-						return JSON.stringify({
-							error: 'Missing required fields: operation and title are required.',
-						});
-					}
-
 					let responseData;
 
 					if (operation === 'get') {
-						responseData = await client.getPage({ title });
+						responseData = await client.getPage({ title: pageTitle });
 					} else if (operation === 'create' || operation === 'update') {
-						if (!content) {
+						if (!pageContent) {
 							return JSON.stringify({
 								error: 'Content is required for create and update operations.',
 							});
 						}
-						responseData = await client.editPage({ title, content });
+						responseData = await client.editPage({ title: pageTitle, content: pageContent });
 					} else {
 						return JSON.stringify({
 							error: 'Invalid operation. Supported operations: get, create, update',
 						});
 					}
 
-					return JSON.stringify(responseData);
+					return JSON.stringify({
+						success: true,
+						operation,
+						title: pageTitle,
+						response: responseData,
+					});
 				} catch (error) {
 					return JSON.stringify({
+						success: false,
 						error: error instanceof Error ? error.message : String(error),
 					});
 				}
