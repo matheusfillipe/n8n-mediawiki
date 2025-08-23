@@ -1,103 +1,74 @@
 import {
-	ISupplyDataFunctions,
-	INodeType,
-	INodeTypeDescription,
-	SupplyData,
-	NodeConnectionType,
-} from 'n8n-workflow';
-
-import { DynamicTool } from '@langchain/core/tools';
-import { MediaWikiClient } from '../../src/MediaWikiClient';
+  IExecuteFunctions,
+  INodeExecutionData,
+  INodeType,
+  INodeTypeDescription,
+  NodeConnectionType,
+} from 'n8n-workflow'
+import { MediaWikiClient } from '../../src/MediaWikiClient'
 
 export class MediaWikiSearchTool implements INodeType {
-	description: INodeTypeDescription = {
-		displayName: 'MediaWiki Search Tool',
-		name: 'mediaWikiSearchTool',
-		icon: 'file:mediawiki.svg',
-		group: ['transform'],
-		version: 1,
-		description: 'AI tool for searching MediaWiki pages',
-		usableAsTool: true,
-		defaults: {
-			name: 'MediaWiki Search Tool',
-		},
-		codex: {
-			categories: ['AI'],
-			subcategories: {
-				AI: ['Tools'],
-			},
-			resources: {
-				primaryDocumentation: [
-					{
-						url: 'https://www.mediawiki.org/wiki/API:Search',
-					},
-				],
-			},
-		},
-		inputs: [],
-		outputs: [{ type: NodeConnectionType.AiTool }],
-		outputNames: ['tool'],
-		credentials: [
-			{
-				name: 'mediaWikiApi',
-				required: false,
-			},
-		],
-		properties: [
-			{
-				displayName: 'Search Term',
-				name: 'searchTerm',
-				type: 'string',
-				default: '',
-				description: 'The search term to find pages',
-				required: false,
-			},
-			{
-				displayName: 'Limit',
-				name: 'limit',
-				type: 'number',
-				typeOptions: {
-					minValue: 1,
-					maxValue: 500,
-				},
-				default: 10,
-				description: 'Max number of results to return',
-				required: false,
-			},
-		],
-	};
+  description: INodeTypeDescription = {
+    displayName: 'MediaWiki Search',
+    name: 'mediaWikiSearchTool',
+    icon: 'file:mediawiki.svg',
+    group: ['transform'],
+    version: 1,
+    subtitle: '={{$parameter["searchTerm"]}}',
+    description: 'Search MediaWiki pages',
+    usableAsTool: true,
+    defaults: { name: 'MediaWiki Search' },
+    inputs: [NodeConnectionType.Main],
+    outputs: [NodeConnectionType.Main],
+    credentials: [{ name: 'mediaWikiApi', required: false }],
+    properties: [
+      {
+        displayName: 'Search Term',
+        name: 'searchTerm',
+        type: 'string',
+        default: '',
+        required: true,
+        description:
+          'The search term to find pages. When used as a tool, click the ⭐ to let the AI fill this.',
+      },
+      {
+        displayName: 'Limit',
+        name: 'limit',
+        type: 'number',
+        typeOptions: { minValue: 1, maxValue: 500 },
+        default: 10,
+        description: 'Max number of results to return',
+      },
+    ],
+  }
 
-	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
-		const searchTerm = this.getNodeParameter('searchTerm', itemIndex) as string;
-		const limit = this.getNodeParameter('limit', itemIndex) as number;
-		const credentials = await this.getCredentials('mediaWikiApi');
+  async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    const items = this.getInputData()
+    const out: INodeExecutionData[] = []
 
-		const client = new MediaWikiClient(credentials, this.helpers);
+    for (let i = 0; i < items.length; i++) {
+      try {
+        const searchTerm = this.getNodeParameter('searchTerm', i) as string
+        const limit = this.getNodeParameter('limit', i) as number
+        const credentials = await this.getCredentials('mediaWikiApi')
+        const client = new MediaWikiClient(credentials, this.helpers)
+        const response = await client.searchPages({ query: searchTerm, limit })
 
-		const tool = new DynamicTool({
-			name: 'mediawiki_search_tool',
-			description: `Search MediaWiki pages for "${searchTerm}". Use this to find pages matching search terms.`,
-			func: async () => {
-				try {
-					const responseData = await client.searchPages({ query: searchTerm, limit });
+        out.push({ json: { success: true, searchTerm, limit, response } })
+      } catch (error) {
+        if (this.continueOnFail()) {
+          out.push({
+            json: {
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          })
+          continue
+        }
+        throw error
+      }
+    }
 
-					return JSON.stringify({
-						success: true,
-						searchTerm,
-						limit,
-						response: responseData,
-					});
-				} catch (error) {
-					return JSON.stringify({
-						success: false,
-						error: error instanceof Error ? error.message : String(error),
-					});
-				}
-			},
-		});
-
-		return {
-			response: tool,
-		};
-	}
+    return [out]
+  }
 }

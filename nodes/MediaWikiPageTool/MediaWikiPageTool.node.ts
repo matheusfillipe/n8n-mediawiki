@@ -1,145 +1,136 @@
 import {
-	ISupplyDataFunctions,
-	INodeType,
-	INodeTypeDescription,
-	SupplyData,
-	NodeConnectionType,
-} from 'n8n-workflow';
+  IExecuteFunctions,
+  INodeExecutionData,
+  INodeType,
+  INodeTypeDescription,
+  NodeConnectionType,
+  NodeOperationError,
+} from 'n8n-workflow'
 
-import { DynamicTool } from '@langchain/core/tools';
-import { MediaWikiClient } from '../../src/MediaWikiClient';
+import { MediaWikiClient } from '../../src/MediaWikiClient'
 
 export class MediaWikiPageTool implements INodeType {
-	description: INodeTypeDescription = {
-		displayName: 'MediaWiki Page Tool',
-		name: 'mediaWikiPageTool',
-		icon: 'file:mediawiki.svg',
-		group: ['transform'],
-		version: 1,
-		description: 'AI tool for MediaWiki page operations (get, create, update)',
-		usableAsTool: true,
-		defaults: {
-			name: 'MediaWiki Page Tool',
-		},
-		codex: {
-			categories: ['AI'],
-			subcategories: {
-				AI: ['Tools'],
-			},
-			resources: {
-				primaryDocumentation: [
-					{
-						url: 'https://www.mediawiki.org/wiki/API:Main_page',
-					},
-				],
-			},
-		},
-		inputs: [],
-		outputs: [{ type: NodeConnectionType.AiTool }],
-		outputNames: ['tool'],
-		credentials: [
-			{
-				name: 'mediaWikiApi',
-				required: false,
-			},
-		],
-		properties: [
-			{
-				displayName: 'Operation',
-				name: 'operation',
-				type: 'options',
-				noDataExpression: true,
-				options: [
-					{
-						name: 'Get',
-						value: 'get',
-					},
-					{
-						name: 'Create',
-						value: 'create',
-					},
-					{
-						name: 'Update',
-						value: 'update',
-					},
-				],
-				default: 'get',
-				required: false,
-			},
-			{
-				displayName: 'Page Title',
-				name: 'pageTitle',
-				type: 'string',
-				default: '',
-				description: 'Title of the page to operate on',
-				required: false,
-			},
-			{
-				displayName: 'Page Content',
-				name: 'pageContent',
-				type: 'string',
-				typeOptions: {
-					rows: 4,
-				},
-				default: '',
-				description: 'Content of the page (for create and update operations)',
-				required: false,
-				displayOptions: {
-					show: {
-						operation: ['create', 'update'],
-					},
-				},
-			},
-		],
-	};
+  description: INodeTypeDescription = {
+    displayName: 'MediaWiki Page',
+    name: 'mediaWikiPageTool',
+    icon: 'file:mediawiki.svg',
+    group: ['transform'],
+    version: 1,
+    subtitle: '={{$parameter["operation"] + ": " + $parameter["pageTitle"]}}',
+    description: 'Perform get, create, or update operations on MediaWiki pages',
+    usableAsTool: true,
+    defaults: {
+      name: 'MediaWiki Page',
+    },
+    inputs: [NodeConnectionType.Main],
+    outputs: [NodeConnectionType.Main],
+    credentials: [
+      {
+        name: 'mediaWikiApi',
+        required: false,
+      },
+    ],
+    properties: [
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+								noDataExpression: true,
+        options: [
+          { name: 'Get', value: 'get' },
+          { name: 'Create', value: 'create' },
+          { name: 'Update', value: 'update' },
+        ],
+        default: 'get',
+        required: true,
+      },
+      {
+        displayName: 'Page Title',
+        name: 'pageTitle',
+        type: 'string',
+        default: '',
+        required: true,
+        description: 'The title of the page to operate on',
+      },
+      {
+        displayName: 'Page Content',
+        name: 'pageContent',
+        type: 'string',
+        typeOptions: { rows: 4 },
+        default: '',
+        required: false,
+        description: 'The full text content of the page (required for create and update)',
+        displayOptions: {
+          show: { operation: ['create', 'update'] },
+        },
+      },
+    ],
+  }
 
-	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
-		const operation = this.getNodeParameter('operation', itemIndex) as string;
-		const pageTitle = this.getNodeParameter('pageTitle', itemIndex) as string;
-		const pageContent = operation !== 'get' ? this.getNodeParameter('pageContent', itemIndex, '') as string : '';
-		const credentials = await this.getCredentials('mediaWikiApi');
+  async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    const items = this.getInputData()
+    const returnData: INodeExecutionData[] = []
 
-		const client = new MediaWikiClient(credentials, this.helpers);
+    for (let i = 0; i < items.length; i++) {
+      try {
+        const operation = this.getNodeParameter('operation', i) as string
+        const pageTitle = this.getNodeParameter('pageTitle', i) as string
+        const pageContent = this.getNodeParameter(
+          'pageContent',
+          i,
+          ''
+        ) as string
+        const credentials = await this.getCredentials('mediaWikiApi')
 
-		const tool = new DynamicTool({
-			name: 'mediawiki_page_tool',
-			description: `MediaWiki page tool for ${operation} operations. Use this to ${operation} pages on MediaWiki instances.`,
-			func: async () => {
-				try {
-					let responseData;
+        const client = new MediaWikiClient(credentials, this.helpers)
+        let response
 
-					if (operation === 'get') {
-						responseData = await client.getPage({ title: pageTitle });
-					} else if (operation === 'create' || operation === 'update') {
-						if (!pageContent) {
-							return JSON.stringify({
-								error: 'Content is required for create and update operations.',
-							});
-						}
-						responseData = await client.editPage({ title: pageTitle, content: pageContent });
-					} else {
-						return JSON.stringify({
-							error: 'Invalid operation. Supported operations: get, create, update',
-						});
-					}
+        if (operation === 'get') {
+          response = await client.getPage({ title: pageTitle })
+        } else if (operation === 'create' || operation === 'update') {
+          if (!pageContent) {
+            throw new NodeOperationError(
+              this.getNode(),
+              'Page content is required for create and update operations.'
+            )
+          }
+          response = await client.editPage({
+            title: pageTitle,
+            content: pageContent,
+          })
+        } else {
+          throw new NodeOperationError(
+            this.getNode(),
+            `Invalid operation: ${operation}`
+          )
+        }
 
-					return JSON.stringify({
-						success: true,
-						operation,
-						title: pageTitle,
-						response: responseData,
-					});
-				} catch (error) {
-					return JSON.stringify({
-						success: false,
-						error: error instanceof Error ? error.message : String(error),
-					});
-				}
-			},
-		});
+        returnData.push({
+          json: {
+            success: true,
+            operation,
+            title: pageTitle,
+            content: pageContent,
+            response,
+          },
+        })
+      } catch (error) {
+        if (this.continueOnFail()) {
+          returnData.push({
+            json: {
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          })
+          continue
+        }
+        throw new NodeOperationError(
+          this.getNode(),
+          error instanceof Error ? error : String(error)
+        )
+      }
+    }
 
-		return {
-			response: tool,
-		};
-	}
+    return [returnData]
+  }
 }
