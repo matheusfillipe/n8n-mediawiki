@@ -49,8 +49,8 @@
       "dist/credentials/MediaWikiApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/MediaWikiPageTool/MediaWikiPageTool.node.js",
-      "dist/nodes/MediaWikiSearchTool/MediaWikiSearchTool.node.js"
+      "dist/nodes/MediaWikiPage/MediaWikiPage.node.js",
+      "dist/nodes/MediaWikiSearch/MediaWikiSearch.node.js"
     ]
   },
   "devDependencies": {

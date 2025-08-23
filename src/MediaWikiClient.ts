@@ -19,6 +19,11 @@ export interface SearchOptions {
 	limit?: number;
 }
 
+export interface PageDeleteOptions {
+	title: string;
+	reason?: string;
+}
+
 export interface RequestHelper {
 	request(options: any): Promise<any>;
 }
@@ -141,6 +146,54 @@ export class MediaWikiClient {
 			},
 			json: true,
 		});
+	}
+
+	async deletePage(options: PageDeleteOptions): Promise<any> {
+		// First, we need to get a proper CSRF token for authenticated requests
+		let token = '+\\'; // Anonymous token
+		
+		try {
+			// Try to get a CSRF token for authenticated deletion
+			const requestOptions = {
+				method: 'GET',
+				url: this.getApiUrlAlternative(),
+				qs: {
+					action: 'query',
+					meta: 'tokens',
+					format: 'json',
+				},
+				json: true,
+			};
+			
+			const tokenResponse = await this.requestHelper.request(requestOptions);
+			
+			if (tokenResponse && tokenResponse.query && tokenResponse.query.tokens && tokenResponse.query.tokens.csrftoken) {
+				token = tokenResponse.query.tokens.csrftoken;
+			}
+		} catch (error) {
+			// If we can't get a token, continue with anonymous token
+			console.warn('Could not retrieve CSRF token, using anonymous token');
+		}
+
+		const formData: any = {
+			action: 'delete',
+			title: options.title,
+			format: 'json',
+			token: token,
+		};
+
+		if (options.reason) {
+			formData.reason = options.reason;
+		}
+
+		const deleteRequestOptions = {
+			method: 'POST',
+			url: this.getApiUrlAlternative(),
+			form: formData,
+			json: true,
+		};
+		
+		return this.requestHelper.request(deleteRequestOptions);
 	}
 
 	async getSiteInfo(): Promise<any> {

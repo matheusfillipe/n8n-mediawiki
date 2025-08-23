@@ -6,30 +6,44 @@ A powerful n8n community node for seamless MediaWiki integration. Connect your n
 
 ## ✨ Features
 
-### 🔧 Regular Nodes
-- **Page Operations**: Get, create, and update MediaWiki pages with ease
-- **Search**: Powerful search functionality for finding pages within any MediaWiki instance
+### 🔧 Regular Workflow Nodes
+- **MediaWiki Page**: Complete page operations (get, create, update, delete) for any MediaWiki instance
+- **MediaWiki Search**: Powerful search functionality for finding pages within MediaWiki
 - **Flexible Authentication**: Support for both authenticated and anonymous operations
 
-### 🤖 AI Tools
-- **MediaWiki Page Tool**: AI-compatible tool for general page operations (get, create, update)
-- **MediaWiki Search Tool**: AI-powered search functionality for intelligent content discovery
-- **MediaWiki Create Page Tool**: Dedicated tool for creating new pages with AI assistance
-- **MediaWiki Update Page Tool**: Smart page updates with edit summary support
+### 🤖 AI-Compatible Tools
+All nodes support AI integration with the "Let AI fill this in" functionality:
+- **MediaWiki Page**: AI-compatible tool for all page operations with intelligent parameter filling
+- **MediaWiki Search**: AI-powered search with contextual query generation
 - **LangChain Integration**: Seamlessly works with n8n AI agents and workflows
+- **Smart Parameter Detection**: AI automatically determines page titles, content, and search terms
 
 ## 📦 Installation
 
-To install this node in your n8n instance:
+### For n8n Users (GUI Installation)
 
-1. **Install the package**:
-   ```bash
-   npm install n8n-nodes-mediawiki
-   ```
+To install this community node in your **self-hosted** n8n instance:
 
-2. **Restart n8n**
+1. **Open n8n Settings**: Go to **Settings** → **Community Nodes**
 
-3. The MediaWiki nodes will appear in your n8n interface
+2. **Start Installation**: Click **Install**
+
+3. **Find Package**: 
+   - **Option A**: Type `n8n-nodes-mediawiki` directly in the **Enter npm package name** field
+   - **Option B**: Click **Browse** to search the npm registry for community nodes, then find `n8n-nodes-mediawiki`
+
+4. **Accept Risks**: Check **"I understand the risks of installing unverified code from a public source"**
+
+5. **Install**: Click **Install**
+
+6. **Ready to Use**: The MediaWiki nodes will now appear in your nodes panel with a package icon
+
+### Managing the Package
+
+- **Update**: When updates are available, an **Update** button will appear in **Settings** → **Community Nodes**
+- **Uninstall**: Go to **Settings** → **Community Nodes**, click **Options** → **Uninstall package**
+
+> **Note**: Community nodes can only be installed on **self-hosted n8n instances** by the instance owner. This feature is not available on n8n Cloud.
 
 ## 🚀 Usage
 
@@ -40,41 +54,43 @@ Configure the MediaWiki API credentials with:
 - **Username**: (Optional) Username for authenticated operations
 - **Password**: (Optional) Password for authenticated operations
 
-### 🎯 Operations
+### 🎯 Available Nodes
 
-#### 📄 Page Resource
+#### 📄 MediaWiki Page
+Complete page management with support for:
 - **Get**: Retrieve the content of any page
-- **Create**: Create a new page with specified content
+- **Create**: Create a new page with specified content  
 - **Update**: Update an existing page with new content
+- **Delete**: Remove pages with optional deletion reason
 
-#### 🔍 Search Resource
-- **Search**: Find pages matching your search query
+#### 🔍 MediaWiki Search  
+- **Search**: Find pages matching your search query with configurable result limits
 
-### 🤖 AI Tools Usage
+### 🤖 AI Integration
 
-The AI tools can be used with n8n's AI Agent nodes:
+Both nodes work seamlessly with n8n's AI Agent nodes:
 
-1. Add an AI Agent node to your workflow
-2. Connect MediaWiki AI tools to your agent  
-3. The AI can now use these tools automatically based on context
+1. **Add nodes to your workflow** - Use MediaWiki Page and MediaWiki Search as regular nodes
+2. **Connect to AI Agents** - These nodes automatically become available as AI tools when connected to AI Agent nodes
+3. **"Let AI fill this in" buttons** - Parameters show toggle buttons allowing AI to automatically fill values based on context
+4. **Intelligent automation** - AI agents can read, create, update, delete, and search MediaWiki content autonomously
 
-#### MediaWiki Page Tool
-- **Input**: `{"operation": "get|create|update", "title": "Page Title", "content": "Page content (for create/update)"}`
-- **Returns**: MediaWiki API response with operation results
+#### Example AI Usage:
+- **AI Research Assistant**: "Find information about quantum computing on Wikipedia and create a summary page"
+- **Content Management**: "Update the company wiki page with the latest product information"
+- **Knowledge Discovery**: "Search for pages related to machine learning and extract key concepts"
 
-#### MediaWiki Search Tool  
-- **Input**: `{"query": "search term", "limit": 10}` or just `"search term"`
-- **Returns**: Rich search results from MediaWiki API
+### 💡 Parameter Configuration
 
-#### MediaWiki Create Page Tool
-- **Input**: `{"title": "Page Title", "content": "Page content"}`
-- **Returns**: Creation confirmation with success details
-- **Note**: Requires authentication credentials
+#### MediaWiki Page Node
+- **Operation**: Select get, create, update, or delete
+- **Page Title**: The title of the page to operate on (AI can fill automatically)
+- **Page Content**: Content for create/update operations (AI can generate)
+- **Delete Reason**: Optional reason for deletion (AI can suggest)
 
-#### MediaWiki Update Page Tool
-- **Input**: `{"title": "Page Title", "content": "Updated content", "summary": "Edit summary (optional)"}`
-- **Returns**: Update confirmation with change details
-- **Note**: Requires authentication credentials and page must exist
+#### MediaWiki Search Node
+- **Search Term**: Query to find matching pages (AI can formulate)
+- **Limit**: Maximum number of results (1-500, defaults to 10)
 
 ## 🛠️ Development
 
@@ -93,7 +109,37 @@ A `compose.yaml` file is included for easy testing:
 docker compose up
 ```
 
-This will start n8n on http://localhost:5678
+This will start n8n on http://localhost:5678 with AI tool support enabled.
+
+### ⚙️ Environment Variables
+
+For AI tool functionality in production, ensure this environment variable is set:
+
+```bash
+N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+```
+
+This enables community nodes to be used as AI tools with the "Let AI fill this in" functionality.
+
+### 📁 Project Structure
+
+```
+n8n-nodes-mediawiki/
+├── nodes/
+│   ├── MediaWikiPage/           # Main page operations node
+│   │   ├── MediaWikiPage.node.ts
+│   │   └── mediawiki.svg
+│   └── MediaWikiSearch/         # Search functionality node
+│       ├── MediaWikiSearch.node.ts
+│       └── mediawiki.svg
+├── credentials/
+│   └── MediaWikiApi.credentials.ts
+├── src/
+│   └── MediaWikiClient.ts       # Shared MediaWiki API client
+└── compose.yaml                 # Docker development environment
+```
+
+Each node functions as both a regular workflow node and an AI tool, eliminating code duplication and ensuring consistency.
 
 ## 📄 License
 

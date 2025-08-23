@@ -7,10 +7,10 @@ import {
 } from 'n8n-workflow'
 import { MediaWikiClient } from '../../src/MediaWikiClient'
 
-export class MediaWikiSearchTool implements INodeType {
+export class MediaWikiSearch implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'MediaWiki Search',
-    name: 'mediaWikiSearchTool',
+    name: 'mediaWikiSearch',
     icon: 'file:mediawiki.svg',
     group: ['transform'],
     version: 1,

@@ -9,10 +9,10 @@ import {
 
 import { MediaWikiClient } from '../../src/MediaWikiClient'
 
-export class MediaWikiPageTool implements INodeType {
+export class MediaWikiPage implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'MediaWiki',
-    name: 'mediaWikiPageTool',
+    name: 'mediaWikiPage',
     icon: 'file:mediawiki.svg',
     group: ['transform'],
     version: 1,
@@ -40,6 +40,7 @@ export class MediaWikiPageTool implements INodeType {
           { name: 'Page Get', value: 'get' },
           { name: 'Page Create', value: 'create' },
           { name: 'Page Update', value: 'update' },
+          { name: 'Page Delete', value: 'delete' },
         ],
         default: 'get',
         required: true,
@@ -64,6 +65,17 @@ export class MediaWikiPageTool implements INodeType {
           show: { operation: ['create', 'update'] },
         },
       },
+      {
+        displayName: 'Delete Reason',
+        name: 'deleteReason',
+        type: 'string',
+        default: '',
+        required: false,
+        description: 'Optional reason for deleting the page',
+        displayOptions: {
+          show: { operation: ['delete'] },
+        },
+      },
     ],
   }
 
@@ -77,6 +89,11 @@ export class MediaWikiPageTool implements INodeType {
         const pageTitle = this.getNodeParameter('pageTitle', i) as string
         const pageContent = this.getNodeParameter(
           'pageContent',
+          i,
+          ''
+        ) as string
+        const deleteReason = this.getNodeParameter(
+          'deleteReason',
           i,
           ''
         ) as string
@@ -98,6 +115,11 @@ export class MediaWikiPageTool implements INodeType {
             title: pageTitle,
             content: pageContent,
           })
+        } else if (operation === 'delete') {
+          response = await client.deletePage({
+            title: pageTitle,
+            reason: deleteReason,
+          })
         } else {
           throw new NodeOperationError(
             this.getNode(),
@@ -105,14 +127,23 @@ export class MediaWikiPageTool implements INodeType {
           )
         }
 
+        const responseData: any = {
+          success: true,
+          operation,
+          title: pageTitle,
+          response,
+        }
+
+        if (operation === 'create' || operation === 'update') {
+          responseData.content = pageContent
+        }
+
+        if (operation === 'delete' && deleteReason) {
+          responseData.reason = deleteReason
+        }
+
         returnData.push({
-          json: {
-            success: true,
-            operation,
-            title: pageTitle,
-            content: pageContent,
-            response,
-          },
+          json: responseData,
         })
       } catch (error) {
         if (this.continueOnFail()) {
