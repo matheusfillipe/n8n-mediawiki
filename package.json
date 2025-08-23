@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-mediawiki",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "n8n community node for MediaWiki integration",
   "keywords": [
     "n8n-community-node-package",
