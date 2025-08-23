@@ -11,7 +11,7 @@ import { MediaWikiClient } from '../../src/MediaWikiClient'
 
 export class MediaWikiPageTool implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'MediaWiki Page',
+    displayName: 'MediaWiki',
     name: 'mediaWikiPageTool',
     icon: 'file:mediawiki.svg',
     group: ['transform'],
@@ -20,7 +20,7 @@ export class MediaWikiPageTool implements INodeType {
     description: 'Perform get, create, or update operations on MediaWiki pages',
     usableAsTool: true,
     defaults: {
-      name: 'MediaWiki Page',
+      name: 'MediaWiki',
     },
     inputs: [NodeConnectionType.Main],
     outputs: [NodeConnectionType.Main],
@@ -37,9 +37,9 @@ export class MediaWikiPageTool implements INodeType {
         type: 'options',
 								noDataExpression: true,
         options: [
-          { name: 'Get', value: 'get' },
-          { name: 'Create', value: 'create' },
-          { name: 'Update', value: 'update' },
+          { name: 'Page Get', value: 'get' },
+          { name: 'Page Create', value: 'create' },
+          { name: 'Page Update', value: 'update' },
         ],
         default: 'get',
         required: true,
