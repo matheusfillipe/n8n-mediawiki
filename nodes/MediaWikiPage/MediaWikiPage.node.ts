@@ -8,6 +8,7 @@ import {
 } from 'n8n-workflow'
 
 import { MediaWikiClient } from '../../src/MediaWikiClient'
+import { convertMarkdownToWikitext } from '../../src/MarkdownToWikitext'
 
 export class MediaWikiPage implements INodeType {
   description: INodeTypeDescription = {
@@ -69,7 +70,29 @@ export class MediaWikiPage implements INodeType {
           'The exact title of the MediaWiki page. Use proper capitalization and spacing. Examples: "Main Page", "User:JohnDoe", "Category:Science"',
       },
       {
-        displayName: 'Page Content',
+        displayName: 'Input Format',
+        name: 'inputFormat',
+        type: 'options',
+        options: [
+          {
+            name: 'MediaWiki Wikitext',
+            value: 'wikitext',
+            description: 'Content is already in MediaWiki wikitext format',
+          },
+          {
+            name: 'Markdown',
+            value: 'markdown',
+            description: 'Content is in Markdown format and will be converted to wikitext',
+          },
+        ],
+        default: 'wikitext',
+        description: 'Format of the input content. If Markdown is selected, content will be automatically converted to MediaWiki wikitext format.',
+        displayOptions: {
+          show: { operation: ['edit'] },
+        },
+      },
+      {
+        displayName: 'Page Content (Wikitext)',
         name: 'pageContent',
         type: 'string',
         typeOptions: { rows: 4 },
@@ -78,7 +101,26 @@ export class MediaWikiPage implements INodeType {
         description:
           'The complete page content in MediaWiki wikitext format. Use MediaWiki markup: ==Headings==, [[links]], {{templates}}, *bullets, #numbered lists, etc.',
         displayOptions: {
-          show: { operation: ['edit'] },
+          show: { 
+            operation: ['edit'],
+            inputFormat: ['wikitext']
+          },
+        },
+      },
+      {
+        displayName: 'Page Content (Markdown)',
+        name: 'pageContent',
+        type: 'string',
+        typeOptions: { rows: 4 },
+        default: '',
+        required: false,
+        description:
+          'The complete page content in Markdown format. Use standard Markdown syntax: # Headings, [links](url), **bold**, *italic*, - bullets, 1. numbered lists, | tables |, ```code blocks```, etc. Content will be automatically converted to MediaWiki wikitext.',
+        displayOptions: {
+          show: { 
+            operation: ['edit'],
+            inputFormat: ['markdown']
+          },
         },
       },
       {
@@ -109,6 +151,11 @@ export class MediaWikiPage implements INodeType {
           i,
           ''
         ) as string
+        const inputFormat = this.getNodeParameter(
+          'inputFormat',
+          i,
+          'wikitext'
+        ) as string
         const deleteReason = this.getNodeParameter(
           'deleteReason',
           i,
@@ -118,6 +165,7 @@ export class MediaWikiPage implements INodeType {
 
         const client = new MediaWikiClient(credentials, this.helpers)
         let response
+        let processedContent: string = pageContent
 
         if (operation === 'get') {
           response = await client.getPage({ title: pageTitle })
@@ -128,9 +176,16 @@ export class MediaWikiPage implements INodeType {
               'Page content is required for edit operations.'
             )
           }
+          
+          // Convert content if input format is markdown
+          processedContent = pageContent
+          if (inputFormat === 'markdown') {
+            processedContent = convertMarkdownToWikitext(pageContent)
+          }
+          
           response = await client.editPage({
             title: pageTitle,
-            content: pageContent,
+            content: processedContent,
           })
         } else if (operation === 'delete') {
           response = await client.deletePage({
@@ -152,7 +207,13 @@ export class MediaWikiPage implements INodeType {
         }
 
         if (operation === 'edit') {
-          responseData.content = pageContent
+          responseData.originalContent = pageContent
+          responseData.inputFormat = inputFormat
+          if (inputFormat === 'markdown') {
+            responseData.convertedContent = processedContent
+          } else {
+            responseData.content = pageContent
+          }
         }
 
         if (operation === 'delete' && deleteReason) {
